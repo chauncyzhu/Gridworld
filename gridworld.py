@@ -37,7 +37,6 @@ class GridWorld():
         with open(file_name) as f:
             for line in f:
                 grid.append(list(line.strip().upper()))
-        
         return np.asarray(grid)
 
 
@@ -66,7 +65,7 @@ class GridWorld():
             if state[0] < 0 or state[1] < 0 or state[0] >= self._size[0] or state[1] >= self._size[1]:
                 return 'N'
             # 取出状态对应的标记
-            return self._map[state]
+            return self._map[tuple(state)]
 
         else:  # 错误状态
             return 'F'
@@ -107,12 +106,14 @@ def epsilon_greedy(epsilon, ac_size, state, Q):
     return action
 
 def random_action(ac_size):
-    return random.randint(ac_size) - 1
+    return random.randint(0, ac_size-1)
 
 def max_q(state, Q):
     """
     根据state取出Q中对应最大的action所在的Q值
     """
+    if len(np.where(Q[state[0], state[1], :] == Q[state[0], state[1], :].max())) > 1:
+        print(Q[state[0], state[1], :].max())
     return Q[state[0], state[1], :].max()
     
 
@@ -126,19 +127,24 @@ def Qlearning():
     # 设置一些参数
     learning_rate = 0.1  # 学习率
     discount_rate = 0.1   # 折扣率
-    experiments = 10000   # 片段，也是时间的长度
+    experiments = 100   # 片段，也是时间的长度
     epsilon = 0.1
 
     # 加载一个网格世界
-    grid_world = GridWorld('file_name')
+    grid_world = GridWorld('gridworld.txt')
     map_size = grid_world.get_map_size()  # 网格世界的大小
     action_size = grid_world.get_action_size()
 
     # 注册一个初始化状态
-    init_state = grid_world.regist_state()
+    grid_world.regist_state()
 
     # 构建一个Q table来存储Q值
     q_table = np.zeros(shape=(map_size[0],map_size[1],action_size))
+
+    # 存储一系列的状态便于后面绘图
+    all_state = [grid_world.get_curr_state()]
+    all_action = []
+    all_reward = []
 
     # offline train
     for i in range(experiments):   # n th episode
@@ -150,11 +156,19 @@ def Qlearning():
         reward = grid_world.next_state(action)   # 获取采取action后的reward，同时通过next_state将对应的state赋给了curr_state
         curr_state = grid_world.get_curr_state()
         # 更新q值
-        q_table[old_state[0], old_state[1], action] += learning_rate*(reward + discount_rate*max_q(curr_state, q_table)) 
-        
+        q_table[old_state[0], old_state[1], action] += learning_rate*(reward + discount_rate*max_q(curr_state, q_table))
+
+        # 添加状态和action
+        all_action.append(action)
+        all_reward.append(reward)
+        all_state.append(curr_state)
+
     
     # 结束
     print("Q table value:", q_table)
+    print('all state route:', all_state)
+    print('all action taken:', all_action)
+    print('all reward get:', all_reward)
 
 
 if __name__ == '__main__':
