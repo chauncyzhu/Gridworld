@@ -99,7 +99,7 @@ def epsilon_greedy(epsilon, ac_size, state, Q):
     FIXME: 为什么要进行贪心策略？
     """
     if random.random() < epsilon:
-        action = random.randint(ac_size)  # 产生一个随机策略
+        action = random.randint(0, ac_size-1)  # 产生一个随机策略
     else:  # 否则根据当前state由Q值产生最大策略
         action = np.where(Q[state[0], state[1], :] == Q[state[0], state[1], :].max())   # 产生最大的Q值对应的action
 
