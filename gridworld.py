@@ -2,6 +2,7 @@
 """
 网格世界的代码实现
 """
+import matplotlib.pyplot as plt
 import random
 import numpy as np
 import collections
@@ -27,6 +28,9 @@ class GridWorld():
 
     def get_curr_state(self):
         return self._st
+
+    def get_goal_coordinate(self):
+        return change_coordinate(np.where(self._map == 'G'), self._size)
 
 
     def get_action_size(self):
@@ -74,14 +78,14 @@ class GridWorld():
     def next_state(self, ac):
         """
         接受action，更新当前state，这里的action是采取序号
-        FIXME: 为什么当为O或者G时才会更新状态？
+        FIXME: 为什么当为O或者G时才会更新状态？而不是位于正常以及目标的时候不更新当前状态？
         """
         new_st = self._st + self._action[ac]
 
         # 检查当前状态，下面的判断语句说明了只位于一个状态，不能同时拥有多个状态
         ch_new_st = self.check_state(new_st)
         if ch_new_st == 'N' or ch_new_st == 'H':  # 如果越界或者掉进陷阱则扣五分
-            self._st = new_st
+            # self._st = new_st
             return -5
         elif ch_new_st == 'O':   # 如果仍然是普通状态则扣1分
             self._st = new_st        
@@ -115,7 +119,14 @@ def max_q(state, Q):
     if len(np.where(Q[state[0], state[1], :] == Q[state[0], state[1], :].max())) > 1:
         print(Q[state[0], state[1], :].max())
     return Q[state[0], state[1], :].max()
-    
+
+def change_coordinate(state, map_size):
+    """
+    更改坐标，因为原先读取数据文件的时候是从map的左上角开始读起
+    """
+    return [state[1], map_size[0]-1-state[0]]
+
+
 
 def Qlearning():
     """
@@ -127,7 +138,7 @@ def Qlearning():
     # 设置一些参数
     learning_rate = 0.1  # 学习率
     discount_rate = 0.1   # 折扣率
-    experiments = 100   # 片段，也是时间的长度
+    experiments = 10000   # 片段，也是时间的长度
     epsilon = 0.1
 
     # 加载一个网格世界
@@ -137,12 +148,13 @@ def Qlearning():
 
     # 注册一个初始化状态
     grid_world.regist_state()
+    init_state = grid_world.get_curr_state()
 
     # 构建一个Q table来存储Q值
     q_table = np.zeros(shape=(map_size[0],map_size[1],action_size))
 
     # 存储一系列的状态便于后面绘图
-    all_state = [grid_world.get_curr_state()]
+    all_state_crd = [change_coordinate(grid_world.get_curr_state(), grid_world.get_map_size())]
     all_action = []
     all_reward = []
 
@@ -161,14 +173,31 @@ def Qlearning():
         # 添加状态和action
         all_action.append(action)
         all_reward.append(reward)
-        all_state.append(curr_state)
+        all_state_crd.append(change_coordinate(curr_state, grid_world.get_map_size()))
 
     
     # 结束
     print("Q table value:", q_table)
-    print('all state route:', all_state)
+    print('all state route:', all_state_crd)
     print('all action taken:', all_action)
     print('all reward get:', all_reward)
+
+
+    # 绘图
+    fig = plt.figure()
+    plt.clf()
+
+    # 绘制agent坐标变换的图
+    all_state_crd = np.array(all_state_crd)  # 可以用vstack避免这一步的转换
+    plt.plot(all_state_crd[:,0], all_state_crd[:,1])
+    goal_pos = grid_world.get_goal_coordinate()
+    init_pos = change_coordinate(init_state, grid_world.get_map_size())
+    plt.text(goal_pos[0], goal_pos[1], 'G')
+    plt.text(init_pos[0], init_pos[1], 'BEGIN')
+    plt.xlim([0, grid_world.get_map_size()[1]])
+    plt.ylim([0, grid_world.get_map_size()[0]])
+    plt.show()
+
 
 
 if __name__ == '__main__':
