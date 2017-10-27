@@ -127,7 +127,6 @@ def change_coordinate(state, map_size):
     return [state[1], map_size[0]-1-state[0]]
 
 
-
 def Qlearning():
     """
     开始进行Q learning，实际上每次更新的时候，是对Q table中的state和action对应的值进行更新
@@ -183,6 +182,23 @@ def Qlearning():
     print('all reward get:', all_reward)
 
 
+    # 使用Q table进行测试，加载网格世界
+    grid_world_test = GridWorld('gridworld.txt')
+    map_size = grid_world_test.get_map_size()  # 网格世界的大小
+    action_size = grid_world_test.get_action_size()
+
+    all_test_state_cor = []
+    test_state = [0,0]
+    # 每一步的action都采取Q table中最大的action
+    while True:
+        all_test_state_cor.append(change_coordinate(test_state, map_size))
+        action = q_table[test_state[0], test_state[1], :].argmax()
+        test_state = []
+
+
+
+
+
     # 绘图
     fig = plt.figure()
     plt.clf()
@@ -197,6 +213,7 @@ def Qlearning():
     plt.xlim([0, grid_world.get_map_size()[1]])
     plt.ylim([0, grid_world.get_map_size()[0]])
     plt.show()
+
 
 
 
