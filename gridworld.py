@@ -137,7 +137,7 @@ def Qlearning():
     # 设置一些参数
     learning_rate = 0.1  # 学习率
     discount_rate = 0.1   # 折扣率
-    experiments = 10000   # 片段，也是时间的长度
+    experiments = 40000   # 片段，也是时间的长度
     epsilon = 0.1
 
     # 加载一个网格世界
@@ -157,12 +157,18 @@ def Qlearning():
     all_action = []
     all_reward = []
 
+    max_q_a = []   # 每个timestep的最大的q值
+
     # offline train
     for i in range(experiments):   # n th episode
         print("now ", i, " experiments")
         # 下面实验随机产生action，然后来更新Q值
         old_state = grid_world.get_curr_state()  # 为进行action前的状态
         action = random_action(action_size)  # 选取一个动作
+
+        # FIXME:保存每个timestep的Q值，这个max q指的是old_state还是curr_state
+        max_q_a.append(max_q(old_state, q_table))
+
         q_table[old_state[0], old_state[1], action] *= 1-learning_rate
         reward = grid_world.next_state(action)   # 获取采取action后的reward，同时通过next_state将对应的state赋给了curr_state
         curr_state = grid_world.get_curr_state()
@@ -185,17 +191,22 @@ def Qlearning():
     # 使用Q table进行测试，加载网格世界
     grid_world_test = GridWorld('gridworld.txt')
     map_size = grid_world_test.get_map_size()  # 网格世界的大小
-    action_size = grid_world_test.get_action_size()
-
     all_test_state_cor = []
-    test_state = [0,0]
+    grid_world_test.regist_state([0,0])
+    test_state = grid_world_test.get_curr_state()
+
     # 每一步的action都采取Q table中最大的action
+    count = 0
     while True:
-        all_test_state_cor.append(change_coordinate(test_state, map_size))
-        action = q_table[test_state[0], test_state[1], :].argmax()
-        test_state = []
+        old_state =  grid_world_test.get_curr_state()
+        all_test_state_cor.append(change_coordinate(old_state, map_size))
+        action = q_table[old_state[0], old_state[1], :].argmax()
+        reward = grid_world_test.next_state(action)
+        print("curr state:",grid_world_test.get_curr_state())
 
-
+        if count > 10:
+            break
+        count+=1
 
 
 
@@ -204,6 +215,11 @@ def Qlearning():
     plt.clf()
 
     # 绘制agent坐标变换的图
+    plt.plot(range(experiments), max_q_a)
+    plt.show()
+
+
+    # 绘制agent max q的曲线
     all_state_crd = np.array(all_state_crd)  # 可以用vstack避免这一步的转换
     plt.plot(all_state_crd[:,0], all_state_crd[:,1])
     goal_pos = grid_world.get_goal_coordinate()
@@ -215,6 +231,19 @@ def Qlearning():
     plt.show()
 
 
+
+    # 绘制agent坐标变换的图，这个是test的
+    all_test_state_cor = np.array(all_test_state_cor)  # 可以用vstack避免这一步的转换
+    plt.plot(all_test_state_cor[:, 0], all_test_state_cor[:, 1])
+    goal_pos = grid_world_test.get_goal_coordinate()
+    print('test state:', test_state)
+    test_pos = change_coordinate(test_state, grid_world_test.get_map_size())
+    print('test pos:', test_pos)
+    plt.text(goal_pos[0], goal_pos[1], 'G')
+    plt.text(test_pos[0], test_pos[1], 'BEGIN')
+    plt.xlim([0, grid_world_test.get_map_size()[1]])
+    plt.ylim([0, grid_world_test.get_map_size()[0]])
+    plt.show()
 
 
 if __name__ == '__main__':
