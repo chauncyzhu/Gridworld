@@ -52,10 +52,10 @@ class GridWorld():
         :return:
         """
         if ch_st == 'O':
-            return random.choice([-6, 4])
+            return random.choice([-12, 10])
             # return -1
         if ch_st == 'G':
-            return random.choice([-30, 40])
+            return random.choice([5])
         if ch_st == 'N' or 'H':
             return -5
 
@@ -153,7 +153,7 @@ def Qlearning():
     Q learning最终的目的是为了使每个state下采取Q值最高的action
     """
     # 加载一个网格世界
-    file_name = 'data/3.txt'
+    file_name = 'data/2.txt'
     grid_world = GridWorld(file_name)
     map_size = grid_world.get_map_size()  # 网格世界的大小
     action_size = grid_world.get_action_size()
@@ -163,7 +163,7 @@ def Qlearning():
     # 设置一些参数
     learning_rate = 0.01  # 学习率
     discount_rate = 0.95   # 折扣率
-    runs = 1
+    runs = 100
     experiments = 10000   # 片段，也是时间的长度
     episode = 4*map_size[0] + 1
     epsilon = 0.1
@@ -172,6 +172,7 @@ def Qlearning():
     # 存储Q table list
     q_table_list = []
     max_q_a_list = []
+    max_a_list = []
     goal_num_list = []
 
     # 存储一系列的状态便于后面绘图
@@ -185,6 +186,7 @@ def Qlearning():
         q_table = np.zeros(shape=(map_size[0], map_size[1], action_size))
         reward_ex = []
         max_q_a = []
+        max_a = []
         goal_num = []
 
         for j in range(experiments):   # n th episode
@@ -194,7 +196,12 @@ def Qlearning():
             # 注册一个初始化状态
             reward_list = [grid_world.regist_state()]
             init_state = grid_world.get_curr_state()
-            max_q_a.append(max_q(init_state, q_table))
+            max_q_a.append(max_q([0, 0], q_table))
+            max_a.append(q_table[0, 0, :].argmax())
+
+            # [0,0] Q changes
+            # print("state:", [0,0], "||max action:", q_table[0, 0, :].argmax(), "||Q:",
+            #       q_table[0, 0, :].max())
 
             count = 1
             goal_count = 0
@@ -226,6 +233,7 @@ def Qlearning():
         reward_runs.append(reward_ex)
         q_table_list.append(q_table)
         max_q_a_list.append(max_q_a)
+        max_a_list.append(max_a)
         goal_num_list.append(goal_num)
 
     print(q_table_list)
@@ -254,15 +262,24 @@ def Qlearning():
             break
 
     # 绘图
+    # plt.close()
     plt.clf()
 
     # 先计算理论max q，绘制max q
+    # plt.figure()
     max_q_value = 5 * pow(discount_rate, 2*(map_size[0] -1)) - sum([pow(discount_rate, i) for i in range(2*map_size[0] -3)])
     print('expected value of q in init state:', max_q_value)
     plt.plot(range(experiments), np.array(max_q_a_list).mean(axis=0))
     plt.show()
 
+    # 先计算理论max q，绘制max q
+    # plt.figure()
+    plt.plot(range(experiments), np.array(max_a_list).mean(axis=0))
+    plt.show()
+
+
     # 绘制平均reward
+    # plt.figure()
     reward_value = (7 - 2 * map_size[0]) / float(2 * map_size[0] - 1)
     print('expected reward:', reward_value)
     plt.plot(range(experiments), np.array(reward_runs).mean(axis=0))
@@ -273,6 +290,7 @@ def Qlearning():
     # plt.show()
 
     # 绘制agent坐标变换的图，这个是test的
+    # plt.figure()
     test_pos = change_coordinate(test_state, grid_world_test.get_map_size())
     goal_pos = grid_world_test.get_goal_coordinate()
     trap_pos = grid_world_test.get_trap_coordinate()
